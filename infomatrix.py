@@ -64,7 +64,7 @@ def response(message):
 			'3.ENT. Сети и Их Топологии в Информатике',
 			'4.ENT. Основы Баз Данных и Реляционные Системы Управления Базами Данных (СУБД)'))
 
-	elif re.fullmatch(r'\d\.\w+\..+' , message.text):
+	elif re.fullmatch(r'\d\.[а-яА-Я0-9a-zA-Z_ ]+\..+' , message.text):
 		spl_txt = message.text.split(".")
 		fname = spl_txt[0]+"_theme_"
 		match spl_txt[1]:
@@ -72,6 +72,9 @@ def response(message):
 				fname += "ent.txt"
 			case "PROG":
 				fname += "prog.txt"
+			case "Задания ЕНТ":
+				q_test(message, spl_txt[2])
+				return
 
 		file = open(fname , "r" , encoding="utf8")
 		text = ""
@@ -95,7 +98,7 @@ def response(message):
 
 	elif message.text == "Тапсырмалар ҰБТ":
 		msg_bot = bot.send_message(message.chat.id,"Please choose theme", reply_markup=menu(1, 
-			'1.Задания ЕНТ. Санды өлшемдері және оларды басқару жолдары'
+			'1.Задания ЕНТ. Санды өлшемдері және оларды басқару жолдары',
 			'2.Задания ЕНТ. Хранение данных и Память',
 			'3.Задания ЕНТ. Сети и Их Топологии', 
 			'4.Задания ЕНТ. Основы Баз Данных и Реляционные Системы Управления Базами Данных (СУБД)'))
@@ -136,15 +139,18 @@ def theme_kb(message, theme):
 
 def q_test(message, theme):
 	text = f'''
-Сгенерируй мне тест по теме {theme}, но выйдай его в определенном виде для парсинга: 
+Сгенерируй мне тест где в каждом вопросе есть лишь один вариант ответа по теме {theme}, но выйдай его в определенном виде для парсинга: 
 создай json объект вне массива в котором есть массив test, 
 в котором есть 6 вопросов-объектов сотоящий из полей quest- сам текст вопроса, массив ответов answers- массив вариантов ответов состоящий из полей code и text;
 и еще поле true_ans которое должно быть в объекте вопроса и содержать код правельного ответа, а не в объекте ответа;
-НЕ ПИШИ НИЧЕГО КРОМЕ JSON ФАЙЛА.'''
+НЕ ПИШИ НИЧЕГО КРОМЕ JSON ФАЙЛА, НИКОГО ЛИШНЕГО ТЕКСТА, ТОЛЬКО JSON.'''
+	
+	bot.send_message(message.chat.id, "Подождите . . . Тест генерируется!", reply_markup=types.ReplyKeyboardRemove())
 
 	print(text)
 
 	user_score = 0
+	wrong_ans = []
 
 	try:
 		completion = client.chat.completions.create(
@@ -164,6 +170,8 @@ def q_test(message, theme):
 	def func(msg, ans):
 		nonlocal quest
 		nonlocal user_score
+		nonlocal wrong_ans
+		nonlocal theme
 
 		if ans == len(quest["test"]):
 			if quest["test"][ans-1]["true_ans"] == msg.text.split(".")[0]:
@@ -171,10 +179,19 @@ def q_test(message, theme):
 				user_score+=1
 			else:
 				bot.send_message(msg.chat.id, "В следущий раз получиться!")
+				wrong_ans.append(ans)
 
-			bot.send_message(msg.chat.id, f'Вы закончили тест! Ваш результат {user_score}/{(len(quest["test"]))}',
+			bot.send_message(message.chat.id, "Анализируется тест . . ." , reply_markup=types.ReplyKeyboardRemove())
+
+			ai_recommend = ai_message(f'''
+				Вот тебе сгенерированый тест по теме "{theme}": {json.dumps(quest)}, и вот вопросы в которых человек ошибся: {", ".join(map(str, wrong_ans))}.
+				Дай рекомендации по улучшению будущих результатов и знаний в этой теме.
+			''');
+
+			bot.send_message(msg.chat.id, f'Вы закончили тест! Ваш результат {user_score}/{(len(quest["test"]))}\nВот рекомендации:{ai_recommend}',
 				reply_markup = menu(1,"Артқа"))
 			return
+
 		elif ans > 0:
 			if quest["test"][ans-1]["true_ans"] == msg.text.split(".")[0]:
 				bot.send_message(msg.chat.id, "Молодец!")
@@ -198,24 +215,26 @@ def q_test(message, theme):
 	func(message, 0)
 
 
-
-
-
-def help_ai(message):
+def ai_message(message):
 	try:
 		completion = client.chat.completions.create(
 			model="gpt-3.5-turbo",
 			messages=[
 				{"role": "system", "content": "You are a self-improvement assistant."},
-				{"role": "user", "content": f"{message.text}"}
+				{"role": "user", "content": f"{message}"}
 			]
 		)
-		response_message = completion.choices[0].message.content  # Accessing the content directly
-		bot.reply_to(message, response_message)
-		print(response_message)  # For debugging
+		res_message = completion.choices[0].message.content 
+		print(res_message)
+		return res_message
 
 	except Exception as e:
-		bot.reply_to(message, f"An error occurred: {str(e)}")
+		return f"An error occurred: {str(e)}"
+
+
+
+def help_ai(message):
+	bot.reply_to(message, ai_message(message.text))
 
 
 @bot.message_handler(commands=['report'])
