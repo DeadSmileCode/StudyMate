@@ -17,7 +17,7 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 					level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-token = ''
+token = '6885941205:AAEvfXEQBGpsBa2ErkiyWLbVRDxwpTDaXk0'
 os.environ["OPENAI_API_KEY"] = ""
 client = OpenAI(
 	api_key=os.environ.get(""),
