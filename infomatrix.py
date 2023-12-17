@@ -17,210 +17,71 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 					level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-token = ''
-os.environ["OPENAI_API_KEY"] = ""
+token = '6411164672:AAEvM2O0BWUhtF3nQPbmkhiR1qcanY7BWSQ'
+os.environ["OPENAI_API_KEY"] = "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"
 client = OpenAI(
 	api_key=os.environ.get(""),
 )
 
 
+
+ai_role = "You are assistant that helps his student ace his UNT exam, answer the questions in the language of the request"
+
+admin_id = '1231797433'
 bot = telebot.TeleBot(token)
-
-admin_id = ''
-
-@bot.message_handler(commands=['start', 'help'])
-def welcome(message):
-	bot.reply_to(message, '''
-Сәлеметсіз бе, мен информатика бойынша ҰБТ-ға дайындалуға көмектесетін AI-ботпын!
-Сізбен жұмыс істейік!
-Нақты не істегіңіз келетінін таңдаңыз;
-
-Ботта қол жетімді командалар:
-/start /help - сіз Бұл хабарламаны көресіз және мәзірдің негізгі бетіне өтесіз
-/report - сіз ботты жақсартуға немесе мәселеге өтініш бере аласыз.
-		''', reply_markup=home_menu())
-
-
-@bot.message_handler(func=lambda message: True)
-def response(message):
-	if message.text == "Курстар ҰБТ":
-		bot.reply_to(message, "Course on ENT", reply_markup=menu(2,
-			'Тақырыптың ҰБТ'
-			'Тапсырмалар ҰБТ'
-			'AI сұраңыз' ))
-
-	elif message.text == "Бағдарламалау курстары":
-		msg_bot = bot.send_message(message.chat.id,"Course prog\n Choose Theme", reply_markup=menu(1,
-			'Theme 1'
-			'Theme 2'
-			'Theme 3'
-			'Theme 4'))
-		bot.register_next_step_handler(msg_bot,)
-
-	elif message.text == "Тақырыптың ҰБТ":
-		msg_bot = bot.send_message(message.chat.id,"Please choose theme", reply_markup=menu(1,
-			'1.ENT. Системы исчисления в информатике: перевод чисел',
-			'2.ENT. Хранение данных и Память в Информатике',
-			'3.ENT. Сети и Их Топологии в Информатике',
-			'4.ENT. Основы Баз Данных и Реляционные Системы Управления Базами Данных (СУБД)'))
-
-	elif re.fullmatch(r'\d\.[а-яА-Я0-9a-zA-Z_ ]+\..+' , message.text):
-		spl_txt = message.text.split(".")
-		fname = spl_txt[0]+"_theme_"
-		match spl_txt[1]:
-			case "ENT":
-				fname += "ent.txt"
-			case "PROG":
-				fname += "prog.txt"
-			case "Задания ЕНТ":
-				q_test(message, spl_txt[2])
-				return
-
-		file = open(fname , "r" , encoding="utf8")
-		text = ""
-		for line in file:
-			text += line
-		file.close()
-
-		msg_bot = bot.send_message(message.chat.id, text , reply_markup = menu(2,
-																	'Тапсырма',
-																	'AI сұраңыз',
-																	'Артқа'))
-
-		def func(message):
-			nonlocal spl_txt
-			theme_kb(message, spl_txt[2])
-
-		bot.register_next_step_handler(msg_bot, func)
-
-	elif message.text == "Артқа":
-		msg_bot = bot.send_message(message.chat.id , "Home" , reply_markup = home_menu())
-
-	elif message.text == "Тапсырмалар ҰБТ":
-		msg_bot = bot.send_message(message.chat.id,"Please choose theme", reply_markup=menu(1, 
-			'1.Задания ЕНТ. Санды өлшемдері және оларды басқару жолдары',
-			'2.Задания ЕНТ. Хранение данных и Память',
-			'3.Задания ЕНТ. Сети и Их Топологии', 
-			'4.Задания ЕНТ. Основы Баз Данных и Реляционные Системы Управления Базами Данных (СУБД)'))
-
-	elif message.text == "Көмек AI":
-		msg_bot = bot.send_message(message.chat.id,"Please write question")
-		bot.register_next_step_handler(msg_bot,help_ai)
-
-	elif message.text == "AI сұраңыз":
-		msg_bot = bot.send_message(message.chat.id,"Please write question")
-		bot.register_next_step_handler(msg_bot,help_ai)
-
-	else:
-		bot.reply_to(message, "I dont know")
-
-		
-# def help_ai_on_themes(message , material):
-# 	prompt_with_material = f"{prompt}\nMaterial: {material}\nAnswer:"
-# 	response = openai.Completion.create(
-# 		engine="text-davinci-003",
-# 		prompt=prompt_with_material,
-# 		max_tokens=150,
-# 		temperature=0.7,
-# 		stop=stop
-# 	)
-
-# 	answer = response.choices[0].text.strip()
-# 	return answer
-
-def theme_kb(message, theme):
-	if message.text == "Артқа":
-		bot.send_message(message.chat.id,"Басты бет" ,markup = home_menu())
-	elif message.text == "AI сұраңыз":
-		help_ai(message)
-	elif message.text == "Тапсырма":
-		q_test(message, theme)
-
-
-def q_test(message, theme):
-	text = f'''
-Сгенерируй мне тест где в каждом вопросе есть лишь один вариант ответа по теме {theme}, но выйдай его в определенном виде для парсинга: 
-создай json объект вне массива в котором есть массив test, 
-в котором есть 6 вопросов-объектов сотоящий из полей quest- сам текст вопроса, массив ответов answers- массив вариантов ответов состоящий из полей code и text;
-и еще поле true_ans которое должно быть в объекте вопроса и содержать код правельного ответа, а не в объекте ответа;
-НЕ ПИШИ НИЧЕГО КРОМЕ JSON ФАЙЛА, НИКОГО ЛИШНЕГО ТЕКСТА, ТОЛЬКО JSON.'''
-	
-	bot.send_message(message.chat.id, "Подождите . . . Тест генерируется!", reply_markup=types.ReplyKeyboardRemove())
-
-	print(text)
-
-	user_score = 0
-	wrong_ans = []
-
-	try:
-		completion = client.chat.completions.create(
-			model="gpt-3.5-turbo",
-			messages=[
-				{"role": "system", "content": "You are a self-improvement assistant."},
-				{"role": "user", "content": f"{text}"}
-			]
-		)
-		response_message = completion.choices[0].message.content  # Accessing the content directly
-		print(response_message)  # For debugging
-	except Exception as e:
-		bot.reply_to(message, f"An error occurred: {str(e)}")
-
-	quest = json.loads(response_message)
-
-	def func(msg, ans):
-		nonlocal quest
-		nonlocal user_score
-		nonlocal wrong_ans
-		nonlocal theme
-
-		if ans == len(quest["test"]):
-			if quest["test"][ans-1]["true_ans"] == msg.text.split(".")[0]:
-				bot.send_message(msg.chat.id, "Молодец!")
-				user_score+=1
-			else:
-				bot.send_message(msg.chat.id, "В следущий раз получиться!")
-				wrong_ans.append(ans)
-
-			bot.send_message(message.chat.id, "Анализируется тест . . ." , reply_markup=types.ReplyKeyboardRemove())
-
-			ai_recommend = ai_message(f'''
-				Вот тебе сгенерированый тест по теме "{theme}": {json.dumps(quest)}, и вот вопросы в которых человек ошибся: {", ".join(map(str, wrong_ans))}.
-				Дай рекомендации по улучшению будущих результатов и знаний в этой теме.
-			''');
-
-			bot.send_message(msg.chat.id, f'Вы закончили тест! Ваш результат {user_score}/{(len(quest["test"]))}\nВот рекомендации:{ai_recommend}',
-				reply_markup = menu(1,"Артқа"))
-			return
-
-		elif ans > 0:
-			if quest["test"][ans-1]["true_ans"] == msg.text.split(".")[0]:
-				bot.send_message(msg.chat.id, "Молодец!")
-				user_score+=1
-			else:
-				bot.send_message(msg.chat.id, "В следущий раз получиться!")
-
-		print(quest["test"][ans-1]["true_ans"])
-		print(msg.text.split(".")[0])
-
-		answers = []
-		for qst in quest["test"][ans]["answers"]:
-			answers.append(f'{qst["code"]}. {qst["text"]}')
-
-		msg_bot = bot.send_message(msg.chat.id, 
-						f'{ans+1}. {quest["test"][ans]["quest"]}',
-						reply_markup = menu(2, *answers))
-
-		bot.register_next_step_handler(msg_bot, lambda msg: func(msg, ans+1))
-
-	func(message, 0)
-
+# Function to generate a menu
+def menu(rows, *text_buttons):
+	markup = types.ReplyKeyboardMarkup(row_width=rows)
+	btns = []
+	for btn in text_buttons:
+		btns.append(types.KeyboardButton(btn))
+	markup.add(*btns)
+	return markup
 
 def ai_message(message):
 	try:
 		completion = client.chat.completions.create(
 			model="gpt-3.5-turbo",
 			messages=[
-				{"role": "system", "content": "You are a self-improvement assistant."},
+				{"role": "system", "content": ai_role},
+				{"role": "user", "content": f"{message}"}
+			]
+		)
+		res_message = completion.choices[0].message.content 
+		print(res_message)
+		return res_message
+
+	except Exception as e:
+		return f"An error occurred: {str(e)}"
+	 
+@bot.message_handler(commands=['ask_ai'])
+def ask_ai(message):
+	# Ask the user to type their question
+	msg_bot = bot.send_message(message.chat.id, "Ask a question to AI. Type your question:")
+	
+	# Register the next step handler for the user's question
+	bot.register_next_step_handler(msg_bot, help_ai_voice_response)
+
+def help_ai_voice_response(message):
+	# Process the user's text question and get the AI response
+	response = ai_message(message.text)
+	
+	# Convert AI response to a voice message
+	tts = gTTS(text=response, lang='en')
+	voice_file = TemporaryFile()
+	tts.write_to_fp(voice_file)
+	voice_file.seek(0)
+
+	# Send the voice message back to the user
+	bot.send_voice(message.chat.id, voice_file)
+	
+
+def ai_message(message):
+	try:
+		completion = client.chat.completions.create(
+			model="gpt-3.5-turbo",
+			messages=[
+				{"role": "system", "content": ai_role},
 				{"role": "user", "content": f"{message}"}
 			]
 		)
@@ -236,7 +97,6 @@ def ai_message(message):
 def help_ai(message):
 	bot.reply_to(message, ai_message(message.text))
 
-
 @bot.message_handler(commands=['report'])
 def report(msg):
 	chat_id = msg.chat.id
@@ -245,25 +105,59 @@ def report(msg):
 
 	report_text = f"New report from user {user_id} in chat {chat_id}:\n\n{text}"
 	bot.send_message(admin_id, report_text)
-	bot.send_message(chat_id, "Есеп бергеніңіз үшін рахмет. Біз оны мүмкіндігінше тезірек қарастырамыз.")
+	bot.send_message(chat_id, "Thank you for your report. We will review it as soon as possible.")
+
+def handle_report(message):
+	report(message)
+
+@bot.callback_query_handler(func=lambda call: call.data == 'report')
+def report_callback_handler(call):
+	bot.send_message(call.message.chat.id, "Please enter your report:")
+	bot.register_next_step_handler(call.message, handle_report)
 
 
-def home_menu():
-	return menu(2, 'Тақырыптың ҰБТ' , 'Тапсырмалар ҰБТ' , 'AI сұраңыз')
 
-def menu(rows, *text_buttons):
-	markup = types.ReplyKeyboardMarkup(row_width=rows)
-	btns = []
+# Function to handle the /programming_courses command
+@bot.message_handler(commands=['programming_courses'])
+def programming_courses(message):
+	courses_text = "Here are some programming courses:\n1. Introduction to Python\n2. Web Development with Django\n3. Machine Learning with Python"
+	bot.send_message(message.chat.id, courses_text)
 
-	for btn in text_buttons:
-		btns.append(types.KeyboardButton(btn))
+# Function to handle the /unt_topics command
+@bot.message_handler(commands=['unt_topics'])
+def unt_topics(message):
+	topics_buttons = ['Systems of numbers in computer science: number conversion',
+					  'Data Storage and Memory in Computer Science',
+					  'Networks and Their Topologies in Computer Science',
+					  'Fundamentals of Databases and Relational Database Management Systems (RDBMS)']
+	msg_bot = bot.send_message(message.chat.id, "Please choose a UNT topic", reply_markup=menu(1, *topics_buttons))
+	bot.register_next_step_handler(msg_bot, unt_topic_selected)
 
-	markup.add(*btns)
-	return markup
+# Function to handle the chosen UNT topic
+def unt_topic_selected(message):
+	bot.send_message(message.chat.id, "The answer is being formed please wait!")
+	selected_topic = message.text.strip()
+
+	# Ask AI for an explanation asynchronously
+	explanation_prompt = f"Explain {selected_topic} with examples. Answer in the language of conversation ."
+	explanation =  ai_message(explanation_prompt)
+
+	# Send the explanation back to the user
+	bot.send_message(message.chat.id, f"{explanation}", reply_markup = menu(1,"Home"))
 
 
+# Function to handle the /start and /help commands
+@bot.message_handler(commands=['start', 'help'])
+def welcome(message):
+	bot.reply_to(message, reply_markup = ReplyKeyboardMarkup,"Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report - Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)")
 #tts and stt
 
+@bot.message_handler(func=lambda message: True)
+def res(message):
+	if message.text == "Home":
+		bot.send_message(message.chat.id , "Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report [message]- Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)")
+
+#tts and stt
 def text_to_speech (message):
 	# Get the text message
 	text = message.text
@@ -278,8 +172,8 @@ def text_to_speech (message):
 	audio.export(ogg_file, format="ogg")
 	ogg_file.seek(0)
 	bot.send_voice (message.chat.id, ogg_file)
+	  
 def voice_query(message): 
-
 	if message.voice:
 		# Get the voice recording file
 		file_info = bot.get_file(message.voice.file_id)
@@ -298,6 +192,4 @@ def voice_query(message):
 		bot.reply_to(message, "Please send a voice recording.")
 
 
-
 bot.polling(none_stop=True)
-
