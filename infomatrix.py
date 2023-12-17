@@ -149,13 +149,13 @@ def unt_topic_selected(message):
 # Function to handle the /start and /help commands
 @bot.message_handler(commands=['start', 'help'])
 def welcome(message):
-	bot.reply_to(message, reply_markup = ReplyKeyboardMarkup,"Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report - Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)")
+	bot.reply_to(message,"Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report - Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)", reply_markup = ReplyKeyboardMarkup())
 #tts and stt
 
 @bot.message_handler(func=lambda message: True)
 def res(message):
 	if message.text == "Home":
-		bot.send_message(message.chat.id , "Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report [message]- Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)")
+		bot.send_message(message.chat.id , "Welcome! You can use the following commands:\n/ask_ai - Ask a question to AI\n/report [message]- Report an issue\n/programming_courses - View programming courses\n/unt_topics - Choose a UNT topic(to see two or more topics repeat the process)", reply_markup = ReplyKeyboardMarkup())
 
 #tts and stt
 def text_to_speech (message):
